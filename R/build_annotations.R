@@ -326,6 +326,9 @@ build_cpg_annots = function(genome = annotatr::builtin_genomes(), annotations = 
     } else if (genome == 'Dpulex') {
         use_ah = FALSE
         con = 'CGI-Dpulex.txt'
+    } else if (genome == 'Tthymallus') {
+        use_ah = FALSE
+        con = 'CGI-Thymallus.txt'
     } else {
         stop(sprintf('CpG features are not supported for genome %s', genome))
     }
@@ -379,6 +382,28 @@ build_cpg_annots = function(genome = annotatr::builtin_genomes(), annotations = 
                         ranges = IRanges::IRanges(start = islands_tbl$start, end = islands_tbl$end),
                         strand = '*')
                     })
+            } else if (genome == 'Tthymallus') {
+                islands_tbl = read.delim(con, header = TRUE, sep = "\t")
+                chrom_info = read.delim("Thymallus_chr_sizes.txt", header = TRUE,
+                            col.names = c("chr","size"))
+                chrom_info = chrom_info[order(chrom_info$chr), ]
+
+                seqinfo_obj = GenomeInfoDb::Seqinfo(seqnames = chrom_info$chr,
+                                        seqlengths = chrom_info$size,
+                                        isCircular = logical(nrow(chrom_info)),
+                                        genome = "Tthymallus")
+            # Convert to GRanges
+            islands = tryCatch({
+            GenomicRanges::GRanges(
+                seqnames = islands_tbl$chr,
+                ranges = IRanges::IRanges(start = islands_tbl$start, end = islands_tbl$end),
+                strand = '*',
+                seqinfo = seqinfo_obj)
+            }, error = function(e){
+             GenomicRanges::GRanges(seqnames = islands_tbl$chr,
+                               ranges = IRanges::IRanges(start = islands_tbl$start, end = islands_tbl$end),
+                               strand = '*')
+    })
                 } else {
                     # Read from URL. There is surprisingly nothing in base that
                     # does this as easily, so here we are with readr again.
@@ -594,12 +619,24 @@ build_gene_annots = function(genome = annotatr::builtin_genomes(), annotations =
                               datacache = org.Dpulex.eg.db:::datacache,
                               objName = "GIDSYMBOL",
                               objTarget = "org.Dpulex.eg.db")
+    } else if (orgdb_name == "Tthymallus") {
+        # T. thymallus uses "GID" as the keytype and has no pre-built egSYMBOL map.
+        # We must build it manually by querying the database.
+        all_gids = keys(get(sprintf('org.%s.eg.db', orgdb_name)), keytype = "GID")
+        eg2symbol = AnnotationDbi::select(get(sprintf('org.%s.eg.db', orgdb_name)),
+                                          keys = all_gids,
+                                          columns = c("GID", "SYMBOL"),
+                                          keytype = "GID")
+        # Rename columns to match the expected format for downstream code.
     } else {
         x = get(sprintf('org.%s.egSYMBOL', orgdb_name)) 
     }
 
-    mapped_genes = mappedkeys(x)
-    eg2symbol = as.data.frame(x[mapped_genes])
+# This block now only applies to cases that produce an 'x' Bimap object
+    if (exists("x")) {
+        mapped_genes = mappedkeys(x)
+        eg2symbol = as.data.frame(x[mapped_genes])
+    }
 
     if(orgdb_name == "Dpulex"){
         colnames(eg2symbol) = c("gene_id","symbol")
@@ -684,9 +721,14 @@ build_gene_annots = function(genome = annotatr::builtin_genomes(), annotations =
             cds_gr = unlist(cds_grl, use.names = FALSE)
             GenomicRanges::mcols(cds_gr)$tx_name = cds_txname_vec
             # Add Entrez ID, symbol, and type
-            if(orgdb_name == "Dpulex"){
-                GenomicRanges::mcols(cds_gr)$gene_id = eg2symbol[match(GenomicRanges::mcols(cds_gr)$tx_name, id_maps$TXNAME),'gene_id'] 
-                GenomicRanges::mcols(cds_gr)$symbol = id_maps[match(GenomicRanges::mcols(cds_gr)$tx_name, id_maps$TXNAME), 'GENEID']
+           # if(orgdb_name == "Dpulex"){
+            #    GenomicRanges::mcols(cds_gr)$gene_id = eg2symbol[match(GenomicRanges::mcols(cds_gr)$tx_name, id_maps$TXNAME),'gene_id'] 
+             #   GenomicRanges::mcols(cds_gr)$symbol = id_maps[match(GenomicRanges::mcols(cds_gr)$tx_name, id_maps$TXNAME), 'GENEID']
+                    # UNIFIED LOGIC: This two-step process is correct for all organisms.
+            # Step 1: Get the gene_id by matching the transcript name.
+            GenomicRanges::mcols(cds_gr)$gene_id = id_maps
+            # Step 2: Use the newly assigned gene_id to look up the correct symbol in our harmonized eg2symbol map.
+            GenomicRanges::mcols(cds_gr)$symbol = eg2symbol
             } else {
                 GenomicRanges::mcols(cds_gr)$gene_id = id_maps[match(GenomicRanges::mcols(cds_gr)$tx_name, id_maps$TXNAME), 'GENEID']
                 GenomicRanges::mcols(cds_gr)$symbol = eg2symbol[match(GenomicRanges::mcols(cds_gr)$gene_id, eg2symbol$gene_id), 'symbol']  
