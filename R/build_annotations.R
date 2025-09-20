@@ -725,10 +725,11 @@ build_gene_annots = function(genome = annotatr::builtin_genomes(), annotations =
             #    GenomicRanges::mcols(cds_gr)$gene_id = eg2symbol[match(GenomicRanges::mcols(cds_gr)$tx_name, id_maps$TXNAME),'gene_id'] 
              #   GenomicRanges::mcols(cds_gr)$symbol = id_maps[match(GenomicRanges::mcols(cds_gr)$tx_name, id_maps$TXNAME), 'GENEID']
                     # UNIFIED LOGIC: This two-step process is correct for all organisms.
-            # Step 1: Get the gene_id by matching the transcript name.
-            GenomicRanges::mcols(cds_gr)$gene_id = id_maps
-            # Step 2: Use the newly assigned gene_id to look up the correct symbol in our harmonized eg2symbol map.
-            GenomicRanges::mcols(cds_gr)$symbol = eg2symbol
+            # Step 1: gene_id by transcript name
+            GenomicRanges::mcols(cds_gr)$gene_id <- id_maps[match(GenomicRanges::mcols(cds_gr)$tx_name, id_maps$TXNAME), 'GENEID']
+
+            # Step 2: symbol by gene_id via eg2symbol
+            GenomicRanges::mcols(cds_gr)$symbol  <- eg2symbol[match(GenomicRanges::mcols(cds_gr)$gene_id, eg2symbol$gene_id), 'symbol']
             } else {
                 GenomicRanges::mcols(cds_gr)$gene_id = id_maps[match(GenomicRanges::mcols(cds_gr)$tx_name, id_maps$TXNAME), 'GENEID']
                 GenomicRanges::mcols(cds_gr)$symbol = eg2symbol[match(GenomicRanges::mcols(cds_gr)$gene_id, eg2symbol$gene_id), 'symbol']  
