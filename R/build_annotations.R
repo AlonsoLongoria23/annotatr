@@ -903,7 +903,7 @@ build_gene_annots = function(genome = annotatr::builtin_genomes(), annotations =
 
                 GenomicRanges::mcols(exonintron_gr) = GenomicRanges::mcols(exonintron_gr)[, c('id','tx_id','gene_id','symbol','type')]
         }
-    }
+    
 
     ### Put it all together
     mgets = annot_codes[annot_codes$code %in% annotations, 'var']
