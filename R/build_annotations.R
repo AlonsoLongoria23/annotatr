@@ -643,7 +643,7 @@ build_gene_annots = function(genome = annotatr::builtin_genomes(), annotations =
         colnames(eg2symbol) = c("gene_id","symbol")
     }
 
-    if(orgdb_name == "Thymallus"){
+    if(orgdb_name == "Tthymallus"){
         colnames(eg2symbol) = c("gene_id","symbol")
     }
     
