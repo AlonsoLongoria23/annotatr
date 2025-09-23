@@ -382,7 +382,8 @@ build_cpg_annots = function(genome = annotatr::builtin_genomes(), annotations = 
                         ranges = IRanges::IRanges(start = islands_tbl$start, end = islands_tbl$end),
                         strand = '*')
                     })
-            } else if (genome == 'Tthymallus') {
+            }
+                if (genome == 'Tthymallus') {
                 islands_tbl = read.delim(con, header = TRUE, sep = "\t")
                 chrom_info = read.delim("Thymallus_chr_sizes.txt", header = TRUE,
                             col.names = c("chr","size"))
@@ -403,7 +404,7 @@ build_cpg_annots = function(genome = annotatr::builtin_genomes(), annotations = 
              GenomicRanges::GRanges(seqnames = islands_tbl$chr,
                                ranges = IRanges::IRanges(start = islands_tbl$start, end = islands_tbl$end),
                                strand = '*')
-    })
+            } )
                 } else {
                     # Read from URL. There is surprisingly nothing in base that
                     # does this as easily, so here we are with readr again.
@@ -619,26 +620,30 @@ build_gene_annots = function(genome = annotatr::builtin_genomes(), annotations =
                               datacache = org.Dpulex.eg.db:::datacache,
                               objName = "GIDSYMBOL",
                               objTarget = "org.Dpulex.eg.db")
-    } else if (orgdb_name == "Tthymallus") {
+    }
+    if (orgdb_name == "Tthymallus") {
         # T. thymallus uses "GID" as the keytype and has no pre-built egSYMBOL map.
         # We must build it manually by querying the database.
-        all_gids = keys(get(sprintf('org.%s.eg.db', orgdb_name)), keytype = "GID")
-        eg2symbol = AnnotationDbi::select(get(sprintf('org.%s.eg.db', orgdb_name)),
-                                          keys = all_gids,
-                                          columns = c("GID", "SYMBOL"),
-                                          keytype = "GID")
-        # Rename columns to match the expected format for downstream code.
+        x = createSimpleBimap(tablename = "gene_info",
+                              Lcolname = "ALIAS",
+                              Rcolname = "SYMBOL",
+                              datacache = org.Tthymallus.eg.db:::datacache,
+                              objName = "GIDSYMBOL",
+                              objTarget = "org.Tthymallus.eg.db")
+        
     } else {
         x = get(sprintf('org.%s.egSYMBOL', orgdb_name)) 
     }
 
-# This block now only applies to cases that produce an 'x' Bimap object
-    if (exists("x")) {
-        mapped_genes = mappedkeys(x)
-        eg2symbol = as.data.frame(x[mapped_genes])
-    }
+
+    mapped_genes = mappedkeys(x)
+    eg2symbol = as.data.frame(x[mapped_genes])
 
     if(orgdb_name == "Dpulex"){
+        colnames(eg2symbol) = c("gene_id","symbol")
+    }
+
+    if(orgdb_name == "Thymallus"){
         colnames(eg2symbol) = c("gene_id","symbol")
     }
     
@@ -721,19 +726,19 @@ build_gene_annots = function(genome = annotatr::builtin_genomes(), annotations =
             cds_gr = unlist(cds_grl, use.names = FALSE)
             GenomicRanges::mcols(cds_gr)$tx_name = cds_txname_vec
             # Add Entrez ID, symbol, and type
-           # if(orgdb_name == "Dpulex"){
-            #    GenomicRanges::mcols(cds_gr)$gene_id = eg2symbol[match(GenomicRanges::mcols(cds_gr)$tx_name, id_maps$TXNAME),'gene_id'] 
-             #   GenomicRanges::mcols(cds_gr)$symbol = id_maps[match(GenomicRanges::mcols(cds_gr)$tx_name, id_maps$TXNAME), 'GENEID']
-                    # UNIFIED LOGIC: This two-step process is correct for all organisms.
-            # Step 1: gene_id by transcript name
-            GenomicRanges::mcols(cds_gr)$gene_id <- id_maps[match(GenomicRanges::mcols(cds_gr)$tx_name, id_maps$TXNAME), 'GENEID']
-
-            # Step 2: symbol by gene_id via eg2symbol
-            GenomicRanges::mcols(cds_gr)$symbol  <- eg2symbol[match(GenomicRanges::mcols(cds_gr)$gene_id, eg2symbol$gene_id), 'symbol']
-            } else {
+            if(orgdb_name == "Dpulex"){
+                GenomicRanges::mcols(cds_gr)$gene_id = eg2symbol[match(GenomicRanges::mcols(cds_gr)$tx_name, id_maps$TXNAME),'gene_id'] 
+                GenomicRanges::mcols(cds_gr)$symbol = id_maps[match(GenomicRanges::mcols(cds_gr)$tx_name, id_maps$TXNAME), 'GENEID']
+            }
+            if(orgdb_name == "Tthymallus"){
+                GenomicRanges::mcols(cds_gr)$gene_id = eg2symbol[match(GenomicRanges::mcols(cds_gr)$tx_name, id_maps$TXNAME),'gene_id'] 
+                GenomicRanges::mcols(cds_gr)$symbol = id_maps[match(GenomicRanges::mcols(cds_gr)$tx_name, id_maps$TXNAME), 'GENEID']
+            }
+            else {
                 GenomicRanges::mcols(cds_gr)$gene_id = id_maps[match(GenomicRanges::mcols(cds_gr)$tx_name, id_maps$TXNAME), 'GENEID']
                 GenomicRanges::mcols(cds_gr)$symbol = eg2symbol[match(GenomicRanges::mcols(cds_gr)$gene_id, eg2symbol$gene_id), 'symbol']  
             }
+            
             
             GenomicRanges::mcols(cds_gr)$type = sprintf('%s_genes_cds', genome)
             GenomicRanges::mcols(cds_gr)$id = paste0('CDS:', seq_along(cds_gr))
@@ -904,7 +909,7 @@ build_gene_annots = function(genome = annotatr::builtin_genomes(), annotations =
 
                 GenomicRanges::mcols(exonintron_gr) = GenomicRanges::mcols(exonintron_gr)[, c('id','tx_id','gene_id','symbol','type')]
         }
-    
+    }
 
     ### Put it all together
     mgets = annot_codes[annot_codes$code %in% annotations, 'var']
@@ -912,6 +917,7 @@ build_gene_annots = function(genome = annotatr::builtin_genomes(), annotations =
     names(genes) = annotations
 
     return(genes)
+
 }
 
 #' A helper function to build lncRNA annotations.
