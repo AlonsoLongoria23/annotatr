@@ -12,7 +12,7 @@ TXDBS = c(
     'TxDb.Rnorvegicus.UCSC.rn5.refGene',
     'TxDb.Rnorvegicus.UCSC.rn6.refGene',
     'TxDb.Dpulex.NCBI.ASM2113471v1.knownGene',
-    'TxDb.Thymallus.ASM434828v1')
+    'TxDb.Tthymallus.ASM434828v1')
 
 # org.* family of packages
 ORGDBS = data.frame(
