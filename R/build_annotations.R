@@ -621,11 +621,11 @@ build_gene_annots = function(genome = annotatr::builtin_genomes(), annotations =
                               objName = "GIDSYMBOL",
                               objTarget = "org.Dpulex.eg.db")
     }
-    if (orgdb_name == "Tthymallus") {
+    else if (orgdb_name == "Tthymallus") {
         # T. thymallus uses "GID" as the keytype and has no pre-built egSYMBOL map.
         # We must build it manually by querying the database.
         x = createSimpleBimap(tablename = "gene_info",
-                              Lcolname = "ALIAS",
+                              Lcolname = "GID",
                               Rcolname = "SYMBOL",
                               datacache = org.Tthymallus.eg.db:::datacache,
                               objName = "GIDSYMBOL",
