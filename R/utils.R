@@ -12,12 +12,13 @@ TXDBS = c(
     'TxDb.Rnorvegicus.UCSC.rn5.refGene',
     'TxDb.Rnorvegicus.UCSC.rn6.refGene',
     'TxDb.Dpulex.NCBI.ASM2113471v1.knownGene',
-    'TxDb.Tthymallus.ASM434828v1')
+    'TxDb.Tthymallus.ASM434828v1',
+    'TxDb.Thymallus.arcticus.ThyArc1.0')
 
 # org.* family of packages
 ORGDBS = data.frame(
-    genome = c('dm3','dm6','galGal5','hg19','hg38','mm9','mm10','rn4','rn5','rn6','Dpulex', 'Tthymallus'),
-    org = c('Dm','Dm','Gg','Hs','Hs','Mm','Mm','Rn','Rn','Rn','Dpulex', 'Tthymallus'),
+    genome = c('dm3','dm6','galGal5','hg19','hg38','mm9','mm10','rn4','rn5','rn6','Dpulex', 'Tthymallus', 'ThyArc1.0' ),
+    org = c('Dm','Dm','Gg','Hs','Hs','Mm','Mm','Rn','Rn','Rn','Dpulex','Tthymallus','ThyArc1.0'),
     stringsAsFactors = FALSE)
 
 HMMCELLLINES = c('Gm12878','H1hesc','Hepg2','Hmec','Hsmm','Huvec','K562','Nhek','Nhlf')
