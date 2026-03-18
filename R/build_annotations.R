@@ -329,6 +329,9 @@ build_cpg_annots = function(genome = annotatr::builtin_genomes(), annotations = 
     } else if (genome == 'Tthymallus') {
         use_ah = FALSE
         con = 'CGI-Thymallus.txt'
+    } else if (genome == 'ThyArc1.0') {
+        use_ah = FALSE
+        con = 'CGI-Tarcticus.txt'
     } else {
         stop(sprintf('CpG features are not supported for genome %s', genome))
     }
@@ -348,7 +351,7 @@ build_cpg_annots = function(genome = annotatr::builtin_genomes(), annotations = 
         message('Building CpG islands...')
         ### Islands
             # Extract and sort the islands based on use_ah
-            if(use_ah) {
+if(use_ah) {
                 islands = ah[[ID]]
             } else {
                 if (genome == 'Dpulex'){
@@ -382,29 +385,51 @@ build_cpg_annots = function(genome = annotatr::builtin_genomes(), annotations = 
                         ranges = IRanges::IRanges(start = islands_tbl$start, end = islands_tbl$end),
                         strand = '*')
                     })
-            }
-                if (genome == 'Tthymallus') {
-                islands_tbl = read.delim(con, header = TRUE, sep = "\t")
-                chrom_info = read.delim("Thymallus_chr_sizes.txt", header = TRUE,
-                            col.names = c("chr","size"))
-                chrom_info = chrom_info[order(chrom_info$chr), ]
+                } else if (genome == 'ThyArc1.0') {
+                    # Arctic Grayling logic
+                    islands_tbl = read.delim(con, header = TRUE, sep = "\t")
+                    chrom_info = read.delim("Thymallus_arc_chr_sizes.txt", header = TRUE,
+                                            col.names = c("chr","size"))
+                    chrom_info = chrom_info[order(chrom_info$chr), ]
 
-                seqinfo_obj = GenomeInfoDb::Seqinfo(seqnames = chrom_info$chr,
-                                        seqlengths = chrom_info$size,
-                                        isCircular = logical(nrow(chrom_info)),
-                                        genome = "Tthymallus")
-            # Convert to GRanges
-            islands = tryCatch({
-            GenomicRanges::GRanges(
-                seqnames = islands_tbl$chr,
-                ranges = IRanges::IRanges(start = islands_tbl$start, end = islands_tbl$end),
-                strand = '*',
-                seqinfo = seqinfo_obj)
-            }, error = function(e){
-             GenomicRanges::GRanges(seqnames = islands_tbl$chr,
-                               ranges = IRanges::IRanges(start = islands_tbl$start, end = islands_tbl$end),
-                               strand = '*')
-            } )
+                    seqinfo_obj = GenomeInfoDb::Seqinfo(seqnames = chrom_info$chr,
+                                                        seqlengths = chrom_info$size,
+                                                        isCircular = logical(nrow(chrom_info)),
+                                                        genome = "ThyArc1.0")
+                    # Convert to GRanges
+                    islands = tryCatch({
+                        GenomicRanges::GRanges(
+                            seqnames = islands_tbl$chr,
+                            ranges = IRanges::IRanges(start = islands_tbl$start, end = islands_tbl$end),
+                            strand = '*',
+                            seqinfo = seqinfo_obj)
+                    }, error = function(e){
+                        GenomicRanges::GRanges(seqnames = islands_tbl$chr,
+                                               ranges = IRanges::IRanges(start = islands_tbl$start, end = islands_tbl$end),
+                                               strand = '*')
+                    })
+                } else if (genome == 'Tthymallus') {
+                    islands_tbl = read.delim(con, header = TRUE, sep = "\t")
+                    chrom_info = read.delim("Thymallus_chr_sizes.txt", header = TRUE,
+                                            col.names = c("chr","size"))
+                    chrom_info = chrom_info[order(chrom_info$chr), ]
+
+                    seqinfo_obj = GenomeInfoDb::Seqinfo(seqnames = chrom_info$chr,
+                                                        seqlengths = chrom_info$size,
+                                                        isCircular = logical(nrow(chrom_info)),
+                                                        genome = "Tthymallus")
+                    # Convert to GRanges
+                    islands = tryCatch({
+                        GenomicRanges::GRanges(
+                            seqnames = islands_tbl$chr,
+                            ranges = IRanges::IRanges(start = islands_tbl$start, end = islands_tbl$end),
+                            strand = '*',
+                            seqinfo = seqinfo_obj)
+                    }, error = function(e){
+                        GenomicRanges::GRanges(seqnames = islands_tbl$chr,
+                                               ranges = IRanges::IRanges(start = islands_tbl$start, end = islands_tbl$end),
+                                               strand = '*')
+                    })
                 } else {
                     # Read from URL. There is surprisingly nothing in base that
                     # does this as easily, so here we are with readr again.
