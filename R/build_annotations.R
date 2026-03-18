@@ -656,7 +656,19 @@ build_gene_annots = function(genome = annotatr::builtin_genomes(), annotations =
                               objName = "GIDSYMBOL",
                               objTarget = "org.Tthymallus.eg.db")
         
-    } else {
+    }
+    else if (orgdb_name == "Tarcticus") {
+            x = createSimpleBimap(
+                                tablename = "gene_info",
+                                Lcolname = "GID",
+                                Rcolname = "SYMBOL",
+                                datacache = org.Tarcticus.eg.db:::datacache,
+                                objName = "GIDSYMBOL",
+                                objTarget = "org.Tarcticus.eg.db"
+    )
+}
+    
+    else {
         x = get(sprintf('org.%s.egSYMBOL', orgdb_name)) 
     }
 
@@ -671,6 +683,10 @@ build_gene_annots = function(genome = annotatr::builtin_genomes(), annotations =
     if(orgdb_name == "Tthymallus"){
         colnames(eg2symbol) = c("gene_id","symbol")
     }
+
+    if(orgdb_name == "Tarcticus"){
+    colnames(eg2symbol) = c("gene_id","symbol")
+}
     
     # Build the base transcripts
     tx_gr = transcripts(txdb, columns = c('TXID','GENEID','TXNAME'))
@@ -752,17 +768,15 @@ build_gene_annots = function(genome = annotatr::builtin_genomes(), annotations =
             GenomicRanges::mcols(cds_gr)$tx_name = cds_txname_vec
             # Add Entrez ID, symbol, and type
             if(orgdb_name == "Dpulex"){
-                GenomicRanges::mcols(cds_gr)$gene_id = eg2symbol[match(GenomicRanges::mcols(cds_gr)$tx_name, id_maps$TXNAME),'gene_id'] 
-                GenomicRanges::mcols(cds_gr)$symbol = id_maps[match(GenomicRanges::mcols(cds_gr)$tx_name, id_maps$TXNAME), 'GENEID']
-            }
-            if(orgdb_name == "Tthymallus"){
-                GenomicRanges::mcols(cds_gr)$gene_id = eg2symbol[match(GenomicRanges::mcols(cds_gr)$tx_name, id_maps$TXNAME),'gene_id'] 
-                GenomicRanges::mcols(cds_gr)$symbol = id_maps[match(GenomicRanges::mcols(cds_gr)$tx_name, id_maps$TXNAME), 'GENEID']
-            }
-            else {
-                GenomicRanges::mcols(cds_gr)$gene_id = id_maps[match(GenomicRanges::mcols(cds_gr)$tx_name, id_maps$TXNAME), 'GENEID']
-                GenomicRanges::mcols(cds_gr)$symbol = eg2symbol[match(GenomicRanges::mcols(cds_gr)$gene_id, eg2symbol$gene_id), 'symbol']  
-            }
+    GenomicRanges::mcols(cds_gr)$gene_id = eg2symbol[match(GenomicRanges::mcols(cds_gr)$tx_name, id_maps$TXNAME), 'gene_id']
+    GenomicRanges::mcols(cds_gr)$symbol = id_maps[match(GenomicRanges::mcols(cds_gr)$tx_name, id_maps$TXNAME), 'GENEID']
+        } else if(orgdb_name == "Tthymallus"){
+    GenomicRanges::mcols(cds_gr)$gene_id = eg2symbol[match(GenomicRanges::mcols(cds_gr)$tx_name, id_maps$TXNAME), 'gene_id']
+    GenomicRanges::mcols(cds_gr)$symbol = id_maps[match(GenomicRanges::mcols(cds_gr)$tx_name, id_maps$TXNAME), 'GENEID']
+        } else {
+    GenomicRanges::mcols(cds_gr)$gene_id = id_maps[match(GenomicRanges::mcols(cds_gr)$tx_name, id_maps$TXNAME), 'GENEID']
+    GenomicRanges::mcols(cds_gr)$symbol = eg2symbol[match(GenomicRanges::mcols(cds_gr)$gene_id, eg2symbol$gene_id), 'symbol']
+        }
             
             
             GenomicRanges::mcols(cds_gr)$type = sprintf('%s_genes_cds', genome)
